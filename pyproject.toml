@@ -6,6 +6,7 @@ build-backend = "hatchling.build"
 name = "az-scout-plugin-batch-sku"
 dynamic = ["version"]
 description = "Plugin for az-scout to list batch SKUs in Azure per region."
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "az-scout",
