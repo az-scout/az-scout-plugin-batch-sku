@@ -1,0 +1,37 @@
+/* Batch SKU plugin styles */
+.batch-sku-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Subscription combobox dropdown */
+#batch-sku-sub-dropdown {
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+#batch-sku-sub-dropdown .dropdown-item {
+    cursor: pointer;
+    padding: 0.3rem 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#batch-sku-sub-dropdown .dropdown-item.active,
+#batch-sku-sub-dropdown .dropdown-item:hover {
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+#batch-sku-sub-dropdown .region-name {
+    opacity: 0.6;
+    font-size: 0.78em;
+}
+
+/* End-of-life badge */
+.batch-sku-eol {
+    color: var(--bs-warning);
+    font-size: 0.78rem;
+}

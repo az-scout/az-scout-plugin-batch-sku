@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "az-scout-plugin-batch-sku"
+dynamic = ["version"]
+description = "Plugin for az-scout to list batch SKUs in Azure per region."
+requires-python = ">=3.11"
+dependencies = [
+    "az-scout",
+    "fastapi",
+]
+
+[project.urls]
+Homepage = "https://github.com/lrivallain/az-scout-plugin-batch-sku"
+Repository = "https://github.com/lrivallain/az-scout-plugin-batch-sku"
+Issues = "https://github.com/lrivallain/az-scout-plugin-batch-sku/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "httpx>=0.28",
+]
+
+[project.entry-points."az_scout.plugins"]
+batch_sku = "az_scout_plugin_batch_sku:plugin"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options.version_scheme = "calver-by-date"
+raw-options.local_scheme = "no-local-version"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/az_scout_plugin_batch_sku/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/az_scout_plugin_batch_sku"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["src/az_scout_plugin_batch_sku/_version.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.uv.sources]
+az-scout = { git = "https://github.com/lrivallain/az-scout.git", rev = "feat/30" }
