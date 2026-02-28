@@ -48,7 +48,7 @@ az-scout-plugin-batch-sku/
 3. When both are set, it fetches subscriptions from `/api/subscriptions`.
 4. The user picks a subscription and clicks **Load SKUs**.
 5. The plugin calls `GET /plugins/batch_sku/batch-skus?subscription_id=…&region=…&tenant_id=…`.
-6. Results are displayed in an accordion grouped by VM family, with a live search filter.
+6. Results are displayed in table with filtering capabilities.
 
 ## Quality checks
 
