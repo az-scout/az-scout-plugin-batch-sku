@@ -45,7 +45,7 @@ wheels = [
 [[package]]
 name = "az-scout"
 version = "2026.3.0"
-source = { git = "https://github.com/lrivallain/az-scout.git#cdf92703dab4965c3aec95787ff65573dd04ad6e" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "azure-identity" },
     { name = "click" },
@@ -55,6 +55,10 @@ dependencies = [
     { name = "mcp", extra = ["cli"] },
     { name = "requests" },
     { name = "uvicorn", extra = ["standard"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/37/64/ebc6d15189c403bd7337b5b90b65113df6ffe0ae08517722ad34de11b6a5/az_scout-2026.3.0.tar.gz", hash = "sha256:7ee2b67ba6e54c7b59c2c07969becab867b1a63d9e403dac124a2251b4203dad", size = 309549, upload-time = "2026-03-02T21:25:49.839Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/5e/60c51493cd9579ec6c53908b9f6dcaa890c0aaa56262bd10961fa79f6b78/az_scout-2026.3.0-py3-none-any.whl", hash = "sha256:ddeee1e4d12e12df1c4f0ee137794e941d9e937a84b61a4d0210c27ef0ad96ae", size = 127824, upload-time = "2026-03-02T21:25:48.121Z" },
 ]
 
 [[package]]
@@ -77,7 +81,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "az-scout", git = "https://github.com/lrivallain/az-scout.git" },
+    { name = "az-scout", specifier = ">=2026.3.0" },
     { name = "fastapi" },
 ]
 

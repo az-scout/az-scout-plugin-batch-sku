@@ -9,7 +9,7 @@ description = "Plugin for az-scout to list batch SKUs in Azure per region."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "az-scout",
+    "az-scout>=2026.3.0",
     "fastapi",
 ]
 
@@ -57,5 +57,3 @@ exclude = ["src/az_scout_plugin_batch_sku/_version\\.py$"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-[tool.uv.sources]
-az-scout = { git = "https://github.com/lrivallain/az-scout.git" }
