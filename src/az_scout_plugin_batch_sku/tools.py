@@ -31,8 +31,11 @@ def list_batch_skus(
     family_filter: str = "",
     name_filter: str = "",
     min_vcpus: int = 0,
+    max_vcpus: int = 0,
     min_memory_gb: float = 0,
+    max_memory_gb: float = 0,
     min_gpus: int = 0,
+    max_gpus: int = 0,
 ) -> str:
     """List Azure Batch-compatible VM SKUs for a region.
 
@@ -41,10 +44,13 @@ def list_batch_skus(
     (e.g. "E16s_v6" matches "Standard_E16s_v6").
     Use *family_filter* to narrow results to a specific family
     (case-insensitive substring match).
-    Use *min_vcpus*, *min_memory_gb*, and *min_gpus* to keep only SKUs
-    whose vCPU count, memory (GB), or GPU count is **>=** the given value.
-    These capability filters are especially useful to reduce the result set
-    when looking for high-end SKUs (e.g. min_vcpus=200).
+    Use *min_vcpus*/*max_vcpus*, *min_memory_gb*/*max_memory_gb*, and
+    *min_gpus*/*max_gpus* to keep only SKUs whose capability value falls
+    within the given range (inclusive). A value of 0 means "no limit" for
+    that bound.
+    Examples: ``min_vcpus=200`` → SKUs with ≥200 vCPUs;
+    ``max_vcpus=8`` → small SKUs with ≤8 vCPUs;
+    ``min_vcpus=4, max_vcpus=16`` → SKUs with 4–16 vCPUs.
     If a SKU appears in the returned list, it IS available for Azure Batch
     in that region. An empty result means the SKU is NOT available.
     """
@@ -65,11 +71,20 @@ def list_batch_skus(
         if name_filter and name_filter.lower() not in name.lower():
             continue
         capabilities = {cap["name"]: cap["value"] for cap in sku.get("capabilities", [])}
-        if min_vcpus and _cap_int(capabilities, "vCPUs") < min_vcpus:
+        vcpus = _cap_int(capabilities, "vCPUs")
+        if min_vcpus and vcpus < min_vcpus:
             continue
-        if min_memory_gb and _cap_float(capabilities, "MemoryGB") < min_memory_gb:
+        if max_vcpus and vcpus > max_vcpus:
             continue
-        if min_gpus and _cap_int(capabilities, "GPUs") < min_gpus:
+        mem = _cap_float(capabilities, "MemoryGB")
+        if min_memory_gb and mem < min_memory_gb:
+            continue
+        if max_memory_gb and mem > max_memory_gb:
+            continue
+        gpus = _cap_int(capabilities, "GPUs")
+        if min_gpus and gpus < min_gpus:
+            continue
+        if max_gpus and gpus > max_gpus:
             continue
         results.append(
             {

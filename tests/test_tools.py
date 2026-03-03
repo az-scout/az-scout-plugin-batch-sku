@@ -209,9 +209,79 @@ def test_zero_capability_filters_return_all(raw_skus: list[dict]) -> None:
                 subscription_id="sub-1",
                 region="westeurope",
                 min_vcpus=0,
+                max_vcpus=0,
                 min_memory_gb=0,
+                max_memory_gb=0,
                 min_gpus=0,
+                max_gpus=0,
             )
         )
 
     assert len(result) == 5
+
+
+def test_max_vcpus_filter(raw_skus: list[dict]) -> None:
+    """max_vcpus keeps only SKUs with vCPUs <= the given threshold."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", max_vcpus=4)
+        )
+
+    names = [s["name"] for s in result]
+    assert "Standard_D2s_v3" in names
+    assert "Standard_E4s_v5" in names
+    assert "Standard_M416ms_v2" not in names
+
+
+def test_max_memory_gb_filter(raw_skus: list[dict]) -> None:
+    """max_memory_gb keeps only SKUs with MemoryGB <= the given threshold."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", max_memory_gb=32)
+        )
+
+    names = [s["name"] for s in result]
+    assert "Standard_D2s_v3" in names
+    assert "Standard_E4s_v5" in names
+    assert "Standard_M416ms_v2" not in names
+    assert "Standard_NC24s_v3" not in names
+
+
+def test_max_gpus_filter(raw_skus: list[dict]) -> None:
+    """max_gpus keeps only SKUs with GPUs <= the given threshold."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", max_gpus=1)
+        )
+
+    names = [s["name"] for s in result]
+    assert "Standard_D2s_v3" in names
+    assert "Standard_NC6" in names  # 1 GPU, within limit
+    assert "Standard_NC24s_v3" not in names  # 4 GPUs, above limit
+
+
+def test_vcpus_range_filter(raw_skus: list[dict]) -> None:
+    """min_vcpus and max_vcpus together select a range."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", min_vcpus=4, max_vcpus=24)
+        )
+
+    names = [s["name"] for s in result]
+    assert "Standard_E4s_v5" in names
+    assert "Standard_NC6" in names
+    assert "Standard_NC24s_v3" in names
+    assert "Standard_D2s_v3" not in names  # 2 vCPUs, below min
+    assert "Standard_M416ms_v2" not in names  # 416 vCPUs, above max
