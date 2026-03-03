@@ -52,6 +52,22 @@ def test_family_filter(raw_skus: list[dict]) -> None:
     assert result[0]["name"] == "Standard_NC6"
 
 
+def test_family_filter_partial_match(raw_skus: list[dict]) -> None:
+    """Partial family_filter matches multiple families containing the substring."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", family_filter="NC")
+        )
+
+    names = [s["name"] for s in result]
+    assert len(result) == 2
+    assert "Standard_NC6" in names
+    assert "Standard_NC24s_v3" in names
+
+
 def test_name_filter(raw_skus: list[dict]) -> None:
     """name_filter narrows results by case-insensitive substring."""
     with (

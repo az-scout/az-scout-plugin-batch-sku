@@ -8,6 +8,14 @@ BATCH_API_VERSION = "2024-07-01"
 AZURE_MGMT_URL = "https://management.azure.com"
 
 
+def _cap_float(capabilities: dict[str, str], key: str) -> float:
+    """Return a capability value as a float, or 0.0 when missing/non-numeric."""
+    try:
+        return float(capabilities.get(key, "0"))
+    except (ValueError, TypeError):
+        return 0.0
+
+
 def _cap_int(capabilities: dict[str, str], key: str) -> int:
     """Return a capability value as an integer, or 0 when missing/non-numeric."""
     try:
@@ -59,7 +67,7 @@ def list_batch_skus(
         capabilities = {cap["name"]: cap["value"] for cap in sku.get("capabilities", [])}
         if min_vcpus and _cap_int(capabilities, "vCPUs") < min_vcpus:
             continue
-        if min_memory_gb and float(capabilities.get("MemoryGB", "0")) < min_memory_gb:
+        if min_memory_gb and _cap_float(capabilities, "MemoryGB") < min_memory_gb:
             continue
         if min_gpus and _cap_int(capabilities, "GPUs") < min_gpus:
             continue
