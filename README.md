@@ -2,6 +2,8 @@
 
 An [az-scout](https://github.com/lrivallain/az-scout) plugin that lists Azure Batch-compatible VM SKUs per region, grouped by VM family.
 
+<img width="1178" height="941" alt="image" src="https://github.com/user-attachments/assets/19414de0-add9-48a0-ae55-4f7b0c893a32" />
+
 ## Features
 
 - **UI tab** with subscription selector that reacts to the main app's tenant & region
