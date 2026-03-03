@@ -285,3 +285,50 @@ def test_vcpus_range_filter(raw_skus: list[dict]) -> None:
     assert "Standard_NC24s_v3" in names
     assert "Standard_D2s_v3" not in names  # 2 vCPUs, below min
     assert "Standard_M416ms_v2" not in names  # 416 vCPUs, above max
+
+
+def test_low_priority_capable_true(raw_skus: list[dict]) -> None:
+    """low_priority_capable=True keeps only SKUs that support low-priority nodes."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", low_priority_capable=True)
+        )
+
+    names = [s["name"] for s in result]
+    assert "Standard_D2s_v3" in names
+    assert "Standard_NC6" in names
+    assert "Standard_M416ms_v2" in names
+    assert "Standard_NC24s_v3" in names
+    assert "Standard_E4s_v5" not in names  # LowPriorityCapable=False
+
+
+def test_low_priority_capable_false(raw_skus: list[dict]) -> None:
+    """low_priority_capable=False keeps only SKUs that do NOT support low-priority."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(
+                subscription_id="sub-1", region="westeurope", low_priority_capable=False
+            )
+        )
+
+    assert len(result) == 1
+    assert result[0]["name"] == "Standard_E4s_v5"
+
+
+def test_low_priority_capable_none_returns_all(raw_skus: list[dict]) -> None:
+    """low_priority_capable=None (default) does not filter any SKU."""
+    with (
+        patch("az_scout_plugin_batch_sku.tools._get_headers", return_value={}),
+        patch("az_scout_plugin_batch_sku.tools._paginate", return_value=raw_skus),
+    ):
+        result = json.loads(
+            list_batch_skus(subscription_id="sub-1", region="westeurope", low_priority_capable=None)
+        )
+
+    assert len(result) == 5
