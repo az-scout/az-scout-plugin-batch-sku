@@ -14,9 +14,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/lrivallain/az-scout-plugin-batch-sku"
-Repository = "https://github.com/lrivallain/az-scout-plugin-batch-sku"
-Issues = "https://github.com/lrivallain/az-scout-plugin-batch-sku/issues"
+Homepage = "https://github.com/az-scout/az-scout-plugin-batch-sku"
+Repository = "https://github.com/az-scout/az-scout-plugin-batch-sku"
+Issues = "https://github.com/az-scout/az-scout-plugin-batch-sku/issues"
 
 [dependency-groups]
 dev = [
