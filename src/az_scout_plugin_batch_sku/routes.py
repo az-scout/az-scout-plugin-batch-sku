@@ -50,6 +50,10 @@ async def list_batch_skus(
             "totalSkus": len(skus),
             "skus": skus,
         }
+
+    except OboTokenError:
+        raise
+
     except Exception as exc:
         logger.exception("Failed to fetch Batch SKUs")
         raise PluginUpstreamError(f"Failed to fetch Batch SKUs: {exc}") from exc
