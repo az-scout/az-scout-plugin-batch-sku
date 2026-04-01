@@ -2,7 +2,13 @@
 
 import json
 
-from az_scout.azure_api import AZURE_MGMT_URL, arm_paginate
+from az_scout.azure_api import (
+    AZURE_MGMT_URL,
+    arm_paginate,
+    enrich_skus_with_confidence,
+    enrich_skus_with_prices,
+    enrich_skus_with_quotas,
+)
 
 from az_scout_batch_sku._constants import BATCH_API_VERSION
 
@@ -36,6 +42,8 @@ def list_batch_skus(
     min_gpus: int = 0,
     max_gpus: int = 0,
     low_priority_capable: bool | None = None,
+    include_prices: bool = False,
+    currency_code: str = "USD",
 ) -> str:
     """List Azure Batch-compatible VM SKUs for a region.
 
@@ -53,6 +61,11 @@ def list_batch_skus(
     ``True`` keeps only SKUs that support low-priority nodes,
     ``False`` keeps only SKUs that do NOT, and the default ``None``
     applies no filter.
+    Set *include_prices* to ``True`` to add PayGo and Spot pricing per SKU.
+    Use *currency_code* (default ``"USD"``) to choose the pricing currency.
+    Each SKU in the result also includes a deployment confidence score
+    (0–100) with a label (High/Medium/Low/Very Low) based on quota
+    pressure, zone availability, and pricing signals.
     Examples: ``min_vcpus=200`` → SKUs with ≥200 vCPUs;
     ``max_vcpus=8`` → small SKUs with ≤8 vCPUs;
     ``min_vcpus=4, max_vcpus=16`` → SKUs with 4–16 vCPUs;
@@ -101,8 +114,17 @@ def list_batch_skus(
                 "family": family,
                 "batchSupportEndOfLife": sku.get("batchSupportEndOfLife"),
                 "capabilities": capabilities,
+                "zones": [],
+                "restrictions": [],
             }
         )
 
     results.sort(key=lambda s: (str(s["family"]), str(s["name"])))
+
+    # Enrich with quotas, pricing, and confidence scoring
+    enrich_skus_with_quotas(results, region, subscription_id, tenant_id or None)
+    if include_prices:
+        enrich_skus_with_prices(results, region, currency_code)
+    enrich_skus_with_confidence(results)
+
     return json.dumps(results, indent=2)

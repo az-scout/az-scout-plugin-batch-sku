@@ -3,7 +3,20 @@
 import json
 from unittest.mock import patch
 
+import pytest
+
 from az_scout_batch_sku.tools import list_batch_skus
+
+
+@pytest.fixture(autouse=True)
+def _mock_enrichment():
+    """Mock enrichment functions for all tool tests."""
+    with (
+        patch("az_scout_batch_sku.tools.enrich_skus_with_quotas"),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_prices"),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_confidence"),
+    ):
+        yield
 
 
 def test_list_batch_skus_returns_json_string(raw_skus: list[dict]) -> None:
@@ -271,3 +284,37 @@ def test_low_priority_capable_none_returns_all(raw_skus: list[dict]) -> None:
         )
 
     assert len(result) == 5
+
+
+def test_include_prices_calls_enrich_with_prices(raw_skus: list[dict]) -> None:
+    """include_prices=True calls enrich_skus_with_prices."""
+    with (
+        patch("az_scout_batch_sku.tools.arm_paginate", return_value=raw_skus),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_quotas"),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_prices") as mock_prices,
+        patch("az_scout_batch_sku.tools.enrich_skus_with_confidence"),
+    ):
+        list_batch_skus(
+            subscription_id="sub-1",
+            region="westeurope",
+            include_prices=True,
+            currency_code="EUR",
+        )
+
+    mock_prices.assert_called_once()
+    assert mock_prices.call_args[0][1] == "westeurope"
+    assert mock_prices.call_args[0][2] == "EUR"
+
+
+def test_enrichment_always_calls_quotas_and_confidence(raw_skus: list[dict]) -> None:
+    """Quotas and confidence are always called regardless of include_prices."""
+    with (
+        patch("az_scout_batch_sku.tools.arm_paginate", return_value=raw_skus),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_quotas") as mock_quotas,
+        patch("az_scout_batch_sku.tools.enrich_skus_with_prices"),
+        patch("az_scout_batch_sku.tools.enrich_skus_with_confidence") as mock_conf,
+    ):
+        list_batch_skus(subscription_id="sub-1", region="westeurope")
+
+    mock_quotas.assert_called_once()
+    mock_conf.assert_called_once()

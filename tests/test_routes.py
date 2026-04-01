@@ -1,6 +1,6 @@
 """Tests for the Batch SKU API route."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from az_scout.plugin_api import PluginUpstreamError
@@ -162,3 +162,109 @@ async def test_list_batch_skus_missing_params(client: AsyncClient) -> None:
     """Missing required params return 422."""
     resp = await client.get("/batch-skus")
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_list_batch_skus_with_enrichment(client: AsyncClient, raw_skus: list[dict]) -> None:
+    """GET /batch-skus with enrichment flags invokes enrich_skus pipeline."""
+    compute_skus = [
+        {"name": "Standard_D2s_v3", "zones": ["1", "2", "3"], "restrictions": []},
+    ]
+    with (
+        patch("az_scout_batch_sku.routes.arm_paginate", return_value=raw_skus),
+        patch("az_scout_batch_sku.routes.get_skus", return_value=compute_skus),
+        patch("az_scout_batch_sku.routes.enrich_skus", new_callable=AsyncMock) as mock_enrich,
+    ):
+        resp = await client.get(
+            "/batch-skus",
+            params={
+                "subscription_id": "sub-1",
+                "region": "westeurope",
+                "include_prices": "true",
+                "include_quotas": "true",
+                "include_confidence": "true",
+                "currency_code": "EUR",
+            },
+        )
+
+    assert resp.status_code == 200
+    mock_enrich.assert_awaited_once()
+    call_kwargs = mock_enrich.call_args
+    assert call_kwargs.kwargs["prices"] is True
+    assert call_kwargs.kwargs["quotas"] is True
+    assert call_kwargs.kwargs["confidence"] is True
+    assert call_kwargs.kwargs["currency_code"] == "EUR"
+
+
+@pytest.mark.asyncio
+async def test_list_batch_skus_no_enrichment_by_default(
+    client: AsyncClient, raw_skus: list[dict]
+) -> None:
+    """Without enrichment flags, enrich_skus is not called."""
+    with (
+        patch("az_scout_batch_sku.routes.arm_paginate", return_value=raw_skus),
+        patch("az_scout_batch_sku.routes.enrich_skus", new_callable=AsyncMock) as mock_enrich,
+    ):
+        resp = await client.get(
+            "/batch-skus",
+            params={"subscription_id": "sub-1", "region": "westeurope"},
+        )
+
+    assert resp.status_code == 200
+    mock_enrich.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_list_batch_skus_normalized_shape(client: AsyncClient, raw_skus: list[dict]) -> None:
+    """Normalized SKUs include zones and restrictions keys."""
+    with patch("az_scout_batch_sku.routes.arm_paginate", return_value=raw_skus):
+        resp = await client.get(
+            "/batch-skus",
+            params={"subscription_id": "sub-1", "region": "westeurope"},
+        )
+
+    skus = resp.json()["skus"]
+    for sku in skus:
+        assert "zones" in sku
+        assert "restrictions" in sku
+        assert sku["zones"] == []
+        assert sku["restrictions"] == []
+
+
+@pytest.mark.asyncio
+async def test_list_batch_skus_zones_from_compute_rp(
+    client: AsyncClient, raw_skus: list[dict]
+) -> None:
+    """Zone and restriction data is merged from Compute RP when enrichment is enabled."""
+    compute_skus = [
+        {"name": "Standard_D2s_v3", "zones": ["1", "2", "3"], "restrictions": ["2"]},
+        {"name": "Standard_NC6", "zones": ["1"], "restrictions": []},
+    ]
+    with (
+        patch("az_scout_batch_sku.routes.arm_paginate", return_value=raw_skus),
+        patch("az_scout_batch_sku.routes.get_skus", return_value=compute_skus),
+        patch("az_scout_batch_sku.routes.enrich_skus", new_callable=AsyncMock),
+    ):
+        resp = await client.get(
+            "/batch-skus",
+            params={
+                "subscription_id": "sub-1",
+                "region": "westeurope",
+                "include_confidence": "true",
+            },
+        )
+
+    assert resp.status_code == 200
+    skus = resp.json()["skus"]
+
+    d2s = next(s for s in skus if s["name"] == "Standard_D2s_v3")
+    assert d2s["zones"] == ["1", "2", "3"]
+    assert d2s["restrictions"] == ["2"]
+
+    nc6 = next(s for s in skus if s["name"] == "Standard_NC6")
+    assert nc6["zones"] == ["1"]
+    assert nc6["restrictions"] == []
+
+    # SKUs not in Compute RP get empty zones
+    e4s = next(s for s in skus if s["name"] == "Standard_E4s_v5")
+    assert e4s["zones"] == []
