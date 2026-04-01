@@ -1,55 +1,89 @@
 <!-- Batch SKU listing tab -->
-<div class="batch-sku-card">
-    <!-- Controls row: subscription combobox + Load button + CSV export -->
-    <div class="row g-2 align-items-end mb-3">
-        <div class="col-md-3 col-lg-3">
-            <label for="batch-sku-sub-search" class="form-label form-label-sm mb-1">
-                <i class="bi bi-collection"></i> Subscription
-            </label>
-            <div class="position-relative" id="batch-sku-sub-combobox">
-                <input type="search" class="form-control form-control-sm" id="batch-sku-sub-search"
-                       placeholder="Select tenant &amp; region first" autocomplete="off" spellcheck="false" disabled>
-                <input type="hidden" id="batch-sku-sub-select" value="">
-                <ul class="dropdown-menu w-100" id="batch-sku-sub-dropdown"></ul>
-            </div>
+
+<!-- Controls row: subscription combobox + currency + Load button + toggles + CSV -->
+<div class="row g-2 align-items-end mb-3">
+    <div class="col-md-3 col-lg-3">
+        <label for="batch-sku-sub-search" class="form-label form-label-sm mb-1">
+            <i class="bi bi-collection"></i> Subscription
+        </label>
+        <div class="position-relative" id="batch-sku-sub-combobox">
+            <input type="search" class="form-control form-control-sm" id="batch-sku-sub-search"
+                   placeholder="Select tenant &amp; region first" autocomplete="off" spellcheck="false" disabled>
+            <input type="hidden" id="batch-sku-sub-select" value="">
+            <ul class="dropdown-menu w-100" id="batch-sku-sub-dropdown"></ul>
         </div>
-        <div class="col-auto">
-            <button class="btn btn-primary btn-sm" id="batch-sku-load-btn" disabled>
-                <i class="bi bi-arrow-repeat"></i> Load SKUs
+    </div>
+    <div class="col-auto">
+        <select class="form-select form-select-sm" id="batch-sku-currency" title="Currency" style="width:80px;">
+            <option value="USD" selected>USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="JPY">JPY</option>
+            <option value="AUD">AUD</option>
+            <option value="CAD">CAD</option>
+            <option value="CHF">CHF</option>
+            <option value="SEK">SEK</option>
+            <option value="BRL">BRL</option>
+            <option value="INR">INR</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary btn-sm" id="batch-sku-load-btn" disabled>
+            <i class="bi bi-arrow-repeat"></i> Load SKUs
+        </button>
+    </div>
+    <div class="col d-none" id="batch-sku-csv-col">
+        <div class="d-flex justify-content-end gap-2 align-items-center">
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="batch-sku-spot-toggle" checked>
+                <label class="form-check-label small" for="batch-sku-spot-toggle">Spot</label>
+            </div>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="batch-sku-prices-toggle" checked>
+                <label class="form-check-label small" for="batch-sku-prices-toggle">Prices</label>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="batch-sku-csv-btn" title="Export as CSV">
+                <i class="bi bi-download"></i> CSV
             </button>
         </div>
-        <div class="col d-none" id="batch-sku-csv-col">
-            <div class="d-flex justify-content-end">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="batch-sku-csv-btn" title="Export as CSV">
-                    <i class="bi bi-download"></i> CSV
-                </button>
+    </div>
+</div>
+
+<!-- Error -->
+<div id="batch-sku-error" class="alert alert-danger alert-sm d-none" role="alert"></div>
+
+<!-- Empty state -->
+<div id="batch-sku-empty" class="text-center text-body-secondary py-5">
+    <i class="bi bi-gpu-card fs-1 d-block mb-2"></i>
+    <p>Select a subscription, then click <strong>Load SKUs</strong>.</p>
+</div>
+
+<!-- Loading -->
+<div id="batch-sku-loading" class="text-center py-5 d-none">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 text-body-secondary">Fetching Batch SKUs…</p>
+</div>
+
+<!-- SKU results -->
+<div id="batch-sku-results" class="d-none">
+    <div id="batch-sku-region-summary" class="d-none"></div>
+    <div id="batch-sku-table-container"></div>
+</div>
+
+<!-- SKU Detail Modal -->
+<div class="modal fade" id="batch-sku-detail-modal" tabindex="-1" aria-labelledby="batch-sku-detail-title" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-md-down modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batch-sku-detail-title">SKU Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="batch-sku-detail-body">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-body-secondary">Loading SKU details…</p>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="alert alert-info py-2 px-3" role="note">
-        <i class="bi bi-info-circle me-1"></i>
-        Listed SKUs are region-level Batch-compatible sizes. Actual pool creation depends on allocation mode
-        (user subscription or Batch-managed), quotas, image/network configuration, and current capacity.
-    </div>
-
-    <!-- Error -->
-    <div id="batch-sku-error" class="alert alert-danger alert-sm d-none" role="alert"></div>
-
-    <!-- Empty state -->
-    <div id="batch-sku-empty" class="text-center text-body-secondary py-5">
-        <i class="bi bi-gpu-card fs-1 d-block mb-2"></i>
-        <p>Select a subscription, then click <strong>Load SKUs</strong>.</p>
-    </div>
-
-    <!-- Loading -->
-    <div id="batch-sku-loading" class="text-center py-5 d-none">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 text-body-secondary">Fetching Batch SKUs…</p>
-    </div>
-
-    <!-- SKU results -->
-    <div id="batch-sku-results" class="d-none">
-        <div id="batch-sku-table-container"></div>
     </div>
 </div>
